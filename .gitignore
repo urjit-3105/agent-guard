@@ -1,0 +1,9 @@
+/target
+dist/
+.trunk/
+*.db
+*.sqlite*
+**/*.rs.bk
+*.pdb
+.DS_Store
+Thumbs.db
