@@ -2,6 +2,8 @@
 
 AgentGuard is a full-stack verification sandbox that intercepts agent-generated database migrations and schema updates, running them through a **Proof-Driven Development (PDD)** planning loop, **Verus formal verification contracts**, and an **in-memory SQLite sandbox** to mathematically guarantee safety, non-destructiveness, and multi-tenant isolation before committing changes to production databases.
 
+> 💡 **Developer / AI Assistant Continuity Guide**: See [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) for full context, architecture details, toolchain setup instructions for fresh environments, and next roadmap milestones.
+
 ---
 
 ## Architecture Overview
@@ -112,3 +114,4 @@ Open `http://127.0.0.1:8080` in your browser.
 1. **Multi-Tenant Isolation**: Proves that all shared entities require strict tenant boundaries (`tenant_id NOT NULL`) and queries cannot cross tenant boundaries.
 2. **Non-Destructive Schema Evolution**: Guarantees that schema updates (such as adding nullable columns or columns with defaults) do not destroy or corrupt existing records.
 3. **Nullability Safety**: Guarantees that adding `NOT NULL` columns to existing tables requires a valid default value to prevent migration lockups.
+
