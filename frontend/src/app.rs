@@ -202,6 +202,10 @@ pub fn App() -> impl IntoView {
                     smt_solving_time_ms: 12,
                     raw_verus_output: "verification results:: 3 verified, 0 errors, 3 obligations satisfied\nSMT solver time: 12ms (Z3 v4.12.2)".to_string(),
                     verdict: "PASS: Mathematically Verified Zero Leakage & Schema Safety".to_string(),
+                    cli_execution: None,
+                    capabilities: None,
+                    generated_spec_file: Some(format!("target/verus_specs/plan_{}.rs", p_id)),
+                    generated_smt2_file: Some(format!("target/verus_specs/plan_{}.smt2", p_id)),
                 }));
             }
             is_busy.set(false);

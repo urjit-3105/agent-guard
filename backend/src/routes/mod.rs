@@ -31,6 +31,7 @@ pub fn create_router(state: AppState) -> Router {
             post(decisions::resolve_decision),
         )
         .route("/api/v1/verify", post(verify::run_verify))
+        .route("/api/v1/verify/capabilities", get(verify::get_capabilities))
         .route("/api/v1/sandbox/execute", post(sandbox::execute_sandbox))
         .layer(cors)
         .with_state(state)

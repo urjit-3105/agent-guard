@@ -205,12 +205,18 @@ Keep these in mind when extending the codebase:
   - Implemented WebSocket route in Axum: `GET /api/v1/ws`.
   - Live broadcast of sandbox forward DDL steps, constraint checks, rollback tests, and formal verification lemmas.
   - Integrated into frontend `ConsoleView` with dedicated "Live WebSocket Stream" tab, live connection badge, and real-time updates.
+- [x] **Phase 4B: Live Verus CLI Integration & Formal Spec Export** (COMPLETED)
+  - Host capability introspection detecting native `verus` and `z3` CLI binaries via `PATH` and environment overrides (`VERUS_BINARY_PATH`, `Z3_BINARY_PATH`).
+  - Configurable execution modes via `AGENTGUARD_VERUS_MODE` (`auto`, `native`, `z3`, `embedded`) with automatic fallback to embedded SMT deductive prover.
+  - Automatic specification generator emitting authentic `.rs` Verus proof contract files (`verus! { ... }`) and standard SMT-LIB2 `.smt2` files to `target/verus_specs/`.
+  - New introspection endpoint `GET /api/v1/verify/capabilities`.
+  - Live WebSocket log streaming for capability detection, spec generation, and prover execution.
+  - Frontend `ProofMatrix` updated with active prover engine status, execution badges, and generated spec artifact references.
+  - Comprehensive unit and integration test coverage for detection, spec generation, and mock CLI execution.
 
 When resuming this project, here are the remaining recommended roadmap items:
 
-1. **Phase 4B: Live Verus CLI Integration**
-   - Add an optional backend toggle in `backend/src/engine/verus_runner.rs` to detect if a native `verus` or `z3` binary is installed on the system path and execute actual `.rs` spec files through the CLI, complementing the existing SMT invariant solver.
-2. **Phase 4C: Persistent Migration History & Attestations**
+1. **Phase 4C: Persistent Migration History & Attestations**
    - Add a persistent SQLite/PostgreSQL storage adapter for migration audit logs and signed cryptographic attestations (e.g., hash of migration + proof certificate).
-3. **Phase 4D: CI/CD GitHub Actions Workflow**
+2. **Phase 4D: CI/CD GitHub Actions Workflow**
    - Create `.github/workflows/ci.yml` running `cargo check --workspace`, `cargo test --workspace`, and `cargo check -p frontend --target wasm32-unknown-unknown` on every push.

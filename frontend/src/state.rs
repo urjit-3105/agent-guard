@@ -29,6 +29,32 @@ pub struct ResolveDecisionResponse {
     pub plan: pdd_core::MigrationPlan,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct VerusCliCapabilities {
+    pub verus_detected: bool,
+    pub verus_path: Option<String>,
+    pub verus_version: Option<String>,
+    pub z3_detected: bool,
+    pub z3_path: Option<String>,
+    pub z3_version: Option<String>,
+    pub active_mode: String,
+    pub mode_configured: String,
+    pub spec_export_directory: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct VerusCliExecutionInfo {
+    pub cli_invoked: bool,
+    pub binary_path: Option<String>,
+    pub spec_file_path: Option<String>,
+    pub smt2_file_path: Option<String>,
+    pub exit_code: Option<i32>,
+    pub duration_ms: u64,
+    pub fallback_to_embedded: bool,
+    pub cli_stdout: String,
+    pub cli_stderr: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VerusVerificationReport {
     pub plan_id: Uuid,
@@ -39,6 +65,14 @@ pub struct VerusVerificationReport {
     pub smt_solving_time_ms: u64,
     pub raw_verus_output: String,
     pub verdict: String,
+    #[serde(default)]
+    pub cli_execution: Option<VerusCliExecutionInfo>,
+    #[serde(default)]
+    pub capabilities: Option<VerusCliCapabilities>,
+    #[serde(default)]
+    pub generated_spec_file: Option<String>,
+    #[serde(default)]
+    pub generated_smt2_file: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -62,4 +96,3 @@ pub struct LogStreamEvent {
     pub message: String,
     pub timestamp: chrono::DateTime<chrono::Utc>,
 }
-

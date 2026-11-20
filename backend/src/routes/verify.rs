@@ -41,7 +41,7 @@ pub async fn run_verify(
         format!("Dispatching Plan {} to Verus SMT / Z3 verification bridge...", plan.id),
     );
 
-    let report = VerusRunner::run_verification(&plan, &intent).await;
+    let report = VerusRunner::run_verification_with_sender(&plan, &intent, Some(&state.log_sender)).await;
 
     for proof in &report.tenant_isolation_proofs {
         let level = if proof.lemma_satisfied { "success" } else { "error" };
@@ -102,3 +102,7 @@ pub async fn run_verify(
     Ok(Json(report))
 }
 
+pub async fn get_capabilities() -> impl IntoResponse {
+    let caps = VerusRunner::detect_capabilities().await;
+    Json(caps)
+}

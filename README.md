@@ -70,7 +70,7 @@ The workspace is structured as a high-performance Cargo Monorepo:
 
 ### Running the Test Suite
 
-Run all 13 unit and integration tests across all workspace crates:
+Run all 17 unit and integration tests across all workspace crates:
 
 ```bash
 cargo test --workspace
@@ -89,10 +89,11 @@ cargo run -p backend
 - **Base URL:** `http://127.0.0.1:3000`
 - **Endpoints:**
   - `GET /api/v1/ws` — Real-time WebSocket log stream for forward DDL, rollback tests, and formal proofs.
+  - `GET /api/v1/verify/capabilities` — Introspect Verus CLI / Z3 host prover capabilities and active solver mode.
   - `POST /api/v1/intent/submit` — Submit natural language migration or DDL statement.
   - `GET /api/v1/decisions` — Retrieve active clarification decision cards.
   - `POST /api/v1/decisions/{id}/resolve` — Human sign-off on a decision card.
-  - `POST /api/v1/verify` — Trigger Verus formal verification proofs.
+  - `POST /api/v1/verify` — Trigger Verus formal verification proofs and export spec artifacts.
   - `POST /api/v1/sandbox/execute` — Execute SQLite transactional dry-run and rollback test.
 
 ---

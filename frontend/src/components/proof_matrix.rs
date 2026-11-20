@@ -31,7 +31,12 @@ pub fn ProofMatrix(
                             </span>
                             <div>
                                 <h4 class="text-sm font-bold text-slate-100">"Formal Proofs (Verus)"</h4>
-                                <span class="text-[11px] text-purple-300 font-mono">"Deductive SMT · Z3 Solver"</span>
+                                <span class="text-[11px] text-purple-300 font-mono">
+                                    {move || match verus_report.get() {
+                                        Some(ref r) => r.smt_solver_engine.clone(),
+                                        None => "Deductive SMT · Z3 Solver".to_string(),
+                                    }}
+                                </span>
                             </div>
                         </div>
 
@@ -58,43 +63,57 @@ pub fn ProofMatrix(
                     // Proof Metrics & Obligations
                     <div class="mt-4 space-y-3">
                         {move || match verus_report.get() {
-                            Some(ref r) => view! {
-                                <div class="space-y-2.5">
-                                    <div class="grid grid-cols-2 gap-2 text-xs font-mono">
-                                        <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
-                                            <span class="text-slate-400 block text-[10px]">"SMT SOLVER DURATION"</span>
-                                            <span class="text-purple-300 font-bold">{format!("{} ms", r.smt_solving_time_ms)}</span>
+                            Some(ref r) => {
+                                let spec_path = r.generated_spec_file.clone();
+                                view! {
+                                    <div class="space-y-2.5">
+                                        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                                            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
+                                                <span class="text-slate-400 block text-[10px]">"SMT SOLVER DURATION"</span>
+                                                <span class="text-purple-300 font-bold">{format!("{} ms", r.smt_solving_time_ms)}</span>
+                                            </div>
+                                            <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
+                                                <span class="text-slate-400 block text-[10px]">"VERIFIED LEMMAS"</span>
+                                                <span class="text-emerald-400 font-bold">{format!("{}/{} Oblig.", r.formal_proofs_count, r.formal_proofs_count)}</span>
+                                            </div>
                                         </div>
-                                        <div class="bg-slate-900 p-2.5 rounded border border-slate-800">
-                                            <span class="text-slate-400 block text-[10px]">"VERIFIED LEMMAS"</span>
-                                            <span class="text-emerald-400 font-bold">{format!("{}/{} Oblig.", r.formal_proofs_count, r.formal_proofs_count)}</span>
-                                        </div>
-                                    </div>
 
-                                    <div class="bg-slate-950/80 p-3 rounded-lg border border-slate-800 text-xs space-y-1.5 font-mono">
-                                        <div class="text-slate-300 font-semibold text-[11px] uppercase tracking-wider mb-1">
-                                            "Formal Invariants Evaluated:"
+                                        <div class="bg-slate-950/80 p-3 rounded-lg border border-slate-800 text-xs space-y-1.5 font-mono">
+                                            <div class="text-slate-300 font-semibold text-[11px] uppercase tracking-wider mb-1">
+                                                "Formal Invariants Evaluated:"
+                                            </div>
+                                            <div class="flex items-center text-emerald-400 text-[11px]">
+                                                <span class="mr-1.5">"✓"</span>
+                                                "TenantIsolationLemma: Zero cross-tenant leakage"
+                                            </div>
+                                            <div class="flex items-center text-emerald-400 text-[11px]">
+                                                <span class="mr-1.5">"✓"</span>
+                                                "SchemaSafetyLemma: Non-destructive backward compatibility"
+                                            </div>
+                                            <div class="flex items-center text-emerald-400 text-[11px]">
+                                                <span class="mr-1.5">"✓"</span>
+                                                "NullabilityLemma: Safe backfill on NOT NULL columns"
+                                            </div>
                                         </div>
-                                        <div class="flex items-center text-emerald-400 text-[11px]">
-                                            <span class="mr-1.5">"✓"</span>
-                                            "TenantIsolationLemma: Zero cross-tenant leakage"
-                                        </div>
-                                        <div class="flex items-center text-emerald-400 text-[11px]">
-                                            <span class="mr-1.5">"✓"</span>
-                                            "SchemaSafetyLemma: Non-destructive backward compatibility"
-                                        </div>
-                                        <div class="flex items-center text-emerald-400 text-[11px]">
-                                            <span class="mr-1.5">"✓"</span>
-                                            "NullabilityLemma: Safe backfill on NOT NULL columns"
-                                        </div>
+
+                                        {if let Some(path) = spec_path {
+                                            view! {
+                                                <div class="flex items-center justify-between text-[10px] font-mono bg-slate-950 p-2 rounded border border-slate-800/80 text-slate-400">
+                                                    <span class="text-purple-400 uppercase font-semibold">"Spec Artifact:"</span>
+                                                    <span class="text-slate-300 truncate max-w-[220px]" title=path.clone()>{path}</span>
+                                                </div>
+                                            }.into_view()
+                                        } else {
+                                            view! { <div></div> }.into_view()
+                                        }}
                                     </div>
-                                </div>
+                                }.into_view()
                             },
                             None => view! {
                                 <div class="text-center py-6 text-slate-500 text-xs font-mono">
                                     "Formal verification will execute once all decision cards receive human sign-off."
                                 </div>
-                            },
+                            }.into_view(),
                         }}
                     </div>
                 </div>
@@ -181,4 +200,3 @@ pub fn ProofMatrix(
         </div>
     }
 }
-
