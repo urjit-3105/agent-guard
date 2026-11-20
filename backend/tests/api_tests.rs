@@ -87,6 +87,76 @@ async fn test_backend_state_and_router_initialization() {
 
     let state = AppState::new(sandbox.pool().clone()).await;
     let _app = create_router(state);
-    // Router successfully created and state bound
+    // Router successfully created with /api/v1/ws and state bound
+}
+
+#[tokio::test]
+async fn test_realtime_websocket_log_broadcast_and_sandbox_streaming() {
+    let sandbox = SqliteSandbox::create_in_memory()
+        .await
+        .expect("Failed to initialize sandbox");
+
+    let state = AppState::new(sandbox.pool().clone()).await;
+    let mut rx = state.log_sender.subscribe();
+
+    // 1. Test manual log broadcast
+    state.emit_log(
+        "system",
+        "info",
+        None,
+        "System initializing real-time test event",
+    );
+
+    let event = rx.recv().await.expect("Failed to receive broadcast event");
+    assert_eq!(event.channel, "system");
+    assert_eq!(event.level, "info");
+    assert_eq!(event.message, "System initializing real-time test event");
+
+    // 2. Test sandbox execution live streaming
+    let plan_id = uuid::Uuid::new_v4();
+    let forward_sql = vec![
+        "CREATE TABLE live_orders (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), amount REAL);".to_string(),
+    ];
+    let rollback_sql = vec![
+        "DROP TABLE IF EXISTS live_orders;".to_string(),
+    ];
+
+    let result = sandbox
+        .execute_sandboxed_migration_with_sender(
+            plan_id,
+            &forward_sql,
+            &rollback_sql,
+            true,
+            Some(&state.log_sender),
+        )
+        .await
+        .expect("Sandbox execution failed");
+
+    assert!(result.success);
+
+    // Collect streamed events from channel
+    let mut streamed_messages = Vec::new();
+    while let Ok(evt) = rx.try_recv() {
+        assert_eq!(evt.channel, "sandbox");
+        assert_eq!(evt.plan_id, Some(plan_id));
+        streamed_messages.push(evt.message);
+    }
+
+    assert!(
+        !streamed_messages.is_empty(),
+        "Expected live sandbox log messages to be streamed"
+    );
+    assert!(streamed_messages
+        .iter()
+        .any(|m| m.contains("Initializing sandboxed SQLite transaction pool")));
+    assert!(streamed_messages
+        .iter()
+        .any(|m| m.contains("Executing DDL: CREATE TABLE live_orders")));
+    assert!(streamed_messages
+        .iter()
+        .any(|m| m.contains("Testing Rollback DDL: DROP TABLE IF EXISTS live_orders")));
+    assert!(streamed_messages
+        .iter()
+        .any(|m| m.contains("Rollback executed cleanly")));
 }
 

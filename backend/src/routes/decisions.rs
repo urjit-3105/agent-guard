@@ -92,6 +92,13 @@ pub async fn resolve_decision(
         .ok_or_else(|| (StatusCode::INTERNAL_SERVER_ERROR, "Card resolution state inconsistency".to_string()))?;
 
     // 4. Update state
+    state.emit_log(
+        "system",
+        "info",
+        Some(plan.id),
+        format!("Decision card {} resolved with option: `{}` by `{}`", id, payload.option_id, payload.resolved_by),
+    );
+
     {
         let mut decisions = state.decisions.write().await;
         decisions.insert(id, resolved_card.clone());

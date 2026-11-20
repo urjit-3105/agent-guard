@@ -70,7 +70,7 @@ The workspace is structured as a high-performance Cargo Monorepo:
 
 ### Running the Test Suite
 
-Run all 12 unit and integration tests across all workspace crates:
+Run all 13 unit and integration tests across all workspace crates:
 
 ```bash
 cargo test --workspace
@@ -88,6 +88,7 @@ cargo run -p backend
 
 - **Base URL:** `http://127.0.0.1:3000`
 - **Endpoints:**
+  - `GET /api/v1/ws` — Real-time WebSocket log stream for forward DDL, rollback tests, and formal proofs.
   - `POST /api/v1/intent/submit` — Submit natural language migration or DDL statement.
   - `GET /api/v1/decisions` — Retrieve active clarification decision cards.
   - `POST /api/v1/decisions/{id}/resolve` — Human sign-off on a decision card.

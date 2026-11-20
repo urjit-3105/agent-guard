@@ -40,6 +40,14 @@ pub async fn submit_intent(
     let formal_invariants = plan.formal_invariants.clone();
     let summary = plan.summary.clone();
 
+    // Broadcast submission event
+    state.emit_log(
+        "system",
+        "info",
+        Some(plan_id),
+        format!("Intent submitted: {} action(s) parsed, {} decision card(s) generated.", intent.actions.len(), cards.len()),
+    );
+
     // Persist to state
     {
         let mut intents = state.intents.write().await;

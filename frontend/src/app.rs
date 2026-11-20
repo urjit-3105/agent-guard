@@ -19,8 +19,37 @@ pub fn App() -> impl IntoView {
     let verus_report = create_rw_signal(Option::<VerusVerificationReport>::None);
     let sandbox_result = create_rw_signal(Option::<SandboxExecutionResult>::None);
     let sandbox_logs = create_rw_signal(Vec::<String>::new());
+    let live_stream_logs = create_rw_signal(Vec::<crate::state::LogStreamEvent>::new());
+    let ws_connected = create_rw_signal(false);
     let is_busy = create_rw_signal(false);
     let status_message = create_rw_signal("Ready to ingest schema migration intent.".to_string());
+
+    #[cfg(target_arch = "wasm32")]
+    create_effect(move |_| {
+        spawn_local(async move {
+            use gloo_net::websocket::futures::WebSocket;
+            use gloo_net::websocket::Message;
+            use futures_util::stream::StreamExt;
+
+            if let Ok(mut ws) = WebSocket::open("ws://127.0.0.1:3000/api/v1/ws") {
+                ws_connected.set(true);
+                while let Some(msg) = ws.next().await {
+                    match msg {
+                        Ok(Message::Text(text)) => {
+                            if let Ok(evt) = serde_json::from_str::<crate::state::LogStreamEvent>(&text) {
+                                if evt.channel == "sandbox" {
+                                    sandbox_logs.update(|logs| logs.push(evt.message.clone()));
+                                }
+                                live_stream_logs.update(|events| events.push(evt));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                ws_connected.set(false);
+            }
+        });
+    });
 
     let has_blocking_decisions = create_memo(move |_| {
         decision_cards.get().iter().any(|c| c.severity >= Severity::Blocking && !c.is_resolved())
@@ -245,6 +274,13 @@ pub fn App() -> impl IntoView {
                         "Axum Core: 127.0.0.1:3000"
                     </div>
                     <div class="flex items-center px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+                        <span class=move || {
+                            let conn = ws_connected.get();
+                            format!("w-2 h-2 rounded-full mr-2 {}", if conn { "bg-emerald-400 animate-pulse" } else { "bg-slate-500" })
+                        }></span>
+                        {move || if ws_connected.get() { "WS: Live Streaming" } else { "WS: Standby" }}
+                    </div>
+                    <div class="flex items-center px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
                         <span class="w-2 h-2 rounded-full bg-purple-400 mr-2"></span>
                         "Verus SMT: Active"
                     </div>
@@ -380,6 +416,8 @@ pub fn App() -> impl IntoView {
                 rollback_sql=Signal::derive(move || rollback_sql.get())
                 verus_raw_output=Signal::derive(move || verus_raw_output.get())
                 sandbox_logs=Signal::derive(move || sandbox_logs.get())
+                live_stream_logs=Signal::derive(move || live_stream_logs.get())
+                ws_connected=Signal::derive(move || ws_connected.get())
             />
         </main>
     }

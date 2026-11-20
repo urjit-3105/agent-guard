@@ -34,11 +34,12 @@ pub async fn execute_sandbox(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create sandbox: {}", e)))?;
 
     let result = sandbox
-        .execute_sandboxed_migration(
+        .execute_sandboxed_migration_with_sender(
             plan.id,
             &plan.forward_sql,
             &plan.rollback_sql,
             test_rollback,
+            Some(&state.log_sender),
         )
         .await
         .map_err(|e| (StatusCode::BAD_REQUEST, e))?;

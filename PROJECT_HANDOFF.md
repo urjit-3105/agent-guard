@@ -130,7 +130,7 @@ When setting up this project on a fresh Windows (or Linux/macOS) installation, f
 
 ## 4. Current Status & Test Suite
 
-All 12 automated unit and integration tests are passing cleanly:
+All 13 automated unit and integration tests are passing cleanly:
 
 | Crate | Test Name | Purpose | Status |
 | :--- | :--- | :--- | :--- |
@@ -146,6 +146,7 @@ All 12 automated unit and integration tests are passing cleanly:
 | `backend` | `test_verus_runner_formal_proof_verification` | SMT proof runner executes lemmas with high confidence | ✅ PASSED |
 | `backend` | `test_backend_state_and_router_initialization` | Axum router initializes state and routes properly | ✅ PASSED |
 | `backend` | `test_sqlite_sandbox_dry_run_and_rollback` | In-memory SQLite dry-run executes and rolls back cleanly | ✅ PASSED |
+| `backend` | `test_realtime_websocket_log_broadcast_and_sandbox_streaming` | Verifies broadcast channel and live streaming during sandbox execution | ✅ PASSED |
 
 **Target Compilation Checks**:
 - Host GNU Target: `cargo check --workspace` -> **0 errors, 0 warnings**
@@ -161,7 +162,8 @@ All 12 automated unit and integration tests are passing cleanly:
 cargo run -p backend
 ```
 - Listens at `http://127.0.0.1:3000`
-- REST Endpoints:
+- REST & WebSocket Endpoints:
+  - `GET /api/v1/ws`: Real-time WebSocket log stream (broadcasts live sandbox DDL executions and formal verification lemmas).
   - `POST /api/v1/intent/submit`: Submits DDL or natural language intent.
   - `GET /api/v1/decisions`: Returns pending decision cards requiring human sign-off.
   - `POST /api/v1/decisions/{id}/resolve`: Resolves a card with chosen option (transitions plan to Approved).
@@ -174,7 +176,7 @@ cd frontend
 trunk serve
 ```
 - Open `http://127.0.0.1:8080` in your web browser.
-- Full reactive Leptos UI with live state updates, decision card review, and proof matrix display.
+- Full reactive Leptos UI with live state updates, decision card review, proof matrix display, and real-time WebSocket console feed.
 
 ---
 
@@ -192,19 +194,23 @@ Keep these in mind when extending the codebase:
    - Component props in `frontend/src/components/` take `Signal<T>` instead of `ReadSignal<T>`. This allows passing either raw signals or derived memos (`Signal::derive(cx, move || ...)`).
 4. **WASM Dual-Target Safety**:
    - `frontend/src/main.rs` uses `#[cfg(target_arch = "wasm32")]` for `leptos::mount_to_body`. When compiled on host (e.g. during `cargo check --workspace`), it falls back to an inert stub so host builds never attempt to link browser DOM symbols.
+5. **Real-Time WebSocket Log Fan-Out**:
+   - `AppState` maintains a `tokio::sync::broadcast::Sender<LogStreamEvent>`. `GET /api/v1/ws` upgrades incoming clients and spawns async split tasks to pipe events down without blocking HTTP handlers.
 
 ---
 
 ## 7. Roadmap & Immediate Next Steps (To Continue Work)
 
-When resuming this project, here are the recommended next features to build:
+- [x] **Phase 4A: Real-time WebSocket Log Streaming** (COMPLETED)
+  - Implemented WebSocket route in Axum: `GET /api/v1/ws`.
+  - Live broadcast of sandbox forward DDL steps, constraint checks, rollback tests, and formal verification lemmas.
+  - Integrated into frontend `ConsoleView` with dedicated "Live WebSocket Stream" tab, live connection badge, and real-time updates.
 
-1. **Phase 4A: Real-time WebSocket Log Streaming**
-   - Implement a WebSocket route in Axum: `GET /api/v1/ws`.
-   - Broadcast live sandboxing logs and proof verification steps from the backend engine to the frontend `ConsoleView` in real-time.
-2. **Phase 4B: Live Verus CLI Integration**
+When resuming this project, here are the remaining recommended roadmap items:
+
+1. **Phase 4B: Live Verus CLI Integration**
    - Add an optional backend toggle in `backend/src/engine/verus_runner.rs` to detect if a native `verus` or `z3` binary is installed on the system path and execute actual `.rs` spec files through the CLI, complementing the existing SMT invariant solver.
-3. **Phase 4C: Persistent Migration History & Attestations**
+2. **Phase 4C: Persistent Migration History & Attestations**
    - Add a persistent SQLite/PostgreSQL storage adapter for migration audit logs and signed cryptographic attestations (e.g., hash of migration + proof certificate).
-4. **Phase 4D: CI/CD GitHub Actions Workflow**
+3. **Phase 4D: CI/CD GitHub Actions Workflow**
    - Create `.github/workflows/ci.yml` running `cargo check --workspace`, `cargo test --workspace`, and `cargo check -p frontend --target wasm32-unknown-unknown` on every push.

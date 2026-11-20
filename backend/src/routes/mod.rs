@@ -2,6 +2,7 @@ pub mod decisions;
 pub mod intent;
 pub mod sandbox;
 pub mod verify;
+pub mod ws;
 
 use axum::routing::{get, post};
 use axum::{Json, Router};
@@ -18,6 +19,7 @@ pub fn create_router(state: AppState) -> Router {
 
     Router::new()
         .route("/health", get(health_check))
+        .route("/api/v1/ws", get(ws::ws_handler))
         .route("/api/v1/intent/submit", post(intent::submit_intent))
         .route("/api/v1/decisions", get(decisions::list_decisions))
         .route(
@@ -42,4 +44,3 @@ async fn health_check() -> Json<serde_json::Value> {
         "engine": "Proof-Driven Development (PDD) + Verus Formal SMT",
     }))
 }
-

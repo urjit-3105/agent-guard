@@ -54,3 +54,12 @@ pub struct SandboxExecutionResult {
     pub logs: Vec<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LogStreamEvent {
+    pub channel: String, // "sandbox" | "verus" | "system"
+    pub level: String,   // "info" | "warn" | "error" | "success"
+    pub plan_id: Option<Uuid>,
+    pub message: String,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+}
+

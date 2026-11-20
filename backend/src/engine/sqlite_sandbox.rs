@@ -112,14 +112,42 @@ impl SqliteSandbox {
         rollback_sql: &[String],
         test_rollback: bool,
     ) -> Result<SandboxExecutionResult, String> {
+        self.execute_sandboxed_migration_with_sender(plan_id, forward_sql, rollback_sql, test_rollback, None).await
+    }
+
+    pub async fn execute_sandboxed_migration_with_sender(
+        &self,
+        plan_id: Uuid,
+        forward_sql: &[String],
+        rollback_sql: &[String],
+        test_rollback: bool,
+        log_sender: Option<&tokio::sync::broadcast::Sender<crate::state::LogStreamEvent>>,
+    ) -> Result<SandboxExecutionResult, String> {
         let start = Instant::now();
         let mut logs = Vec::new();
         let execution_id = Uuid::new_v4();
 
-        logs.push(format!(
-            "[{}] Initializing sandboxed SQLite transaction pool.",
-            Utc::now().to_rfc3339()
-        ));
+        let emit = |logs: &mut Vec<String>, msg: String, level: &str| {
+            if let Some(sender) = log_sender {
+                let _ = sender.send(crate::state::LogStreamEvent {
+                    channel: "sandbox".to_string(),
+                    level: level.to_string(),
+                    plan_id: Some(plan_id),
+                    message: msg.clone(),
+                    timestamp: Utc::now(),
+                });
+            }
+            logs.push(msg);
+        };
+
+        emit(
+            &mut logs,
+            format!(
+                "[{}] Initializing sandboxed SQLite transaction pool.",
+                Utc::now().to_rfc3339()
+            ),
+            "info",
+        );
 
         let mut tx = self
             .pool
@@ -137,9 +165,13 @@ impl SqliteSandbox {
                 continue;
             }
 
-            logs.push(format!("Executing DDL: {}", trimmed));
+            emit(&mut logs, format!("Executing DDL: {}", trimmed), "info");
             if let Err(e) = sqlx::query(trimmed).execute(&mut *tx).await {
-                logs.push(format!("Constraint failure during migration execution: {}", e));
+                emit(
+                    &mut logs,
+                    format!("Constraint failure during migration execution: {}", e),
+                    "error",
+                );
                 let _ = tx.rollback().await;
                 return Ok(SandboxExecutionResult {
                     execution_id,
@@ -165,13 +197,21 @@ impl SqliteSandbox {
             }
         }
 
-        logs.push("Forward migration statements applied successfully in sandbox.".to_string());
+        emit(
+            &mut logs,
+            "Forward migration statements applied successfully in sandbox.".to_string(),
+            "success",
+        );
 
         let mut rollback_success = false;
 
         // Step 2: Rollback Verification
         if test_rollback {
-            logs.push("Initiating automated bidirectional rollback test...".to_string());
+            emit(
+                &mut logs,
+                "Initiating automated bidirectional rollback test...".to_string(),
+                "info",
+            );
             let mut rollback_failed = false;
 
             for r_stmt in rollback_sql {
@@ -180,9 +220,9 @@ impl SqliteSandbox {
                     continue;
                 }
 
-                logs.push(format!("Testing Rollback DDL: {}", trimmed));
+                emit(&mut logs, format!("Testing Rollback DDL: {}", trimmed), "info");
                 if let Err(e) = sqlx::query(trimmed).execute(&mut *tx).await {
-                    logs.push(format!("Rollback script failed: {}", e));
+                    emit(&mut logs, format!("Rollback script failed: {}", e), "error");
                     rollback_failed = true;
                     break;
                 }
@@ -190,18 +230,30 @@ impl SqliteSandbox {
 
             if !rollback_failed {
                 rollback_success = true;
-                logs.push("Rollback executed cleanly without leaving residual schema fragments.".to_string());
+                emit(
+                    &mut logs,
+                    "Rollback executed cleanly without leaving residual schema fragments.".to_string(),
+                    "success",
+                );
             }
 
             // After rollback test, rollback the transaction so the base sandbox remains pristine
             let _ = tx.rollback().await;
-            logs.push("Sandbox transaction rolled back to preserve test isolation.".to_string());
+            emit(
+                &mut logs,
+                "Sandbox transaction rolled back to preserve test isolation.".to_string(),
+                "info",
+            );
         } else {
             // Commit changes to sandbox pool
             tx.commit()
                 .await
                 .map_err(|e| format!("Failed to commit sandbox transaction: {}", e))?;
-            logs.push("Sandbox transaction committed to in-memory state.".to_string());
+            emit(
+                &mut logs,
+                "Sandbox transaction committed to in-memory state.".to_string(),
+                "success",
+            );
         }
 
         let duration_ms = start.elapsed().as_millis() as u64;
