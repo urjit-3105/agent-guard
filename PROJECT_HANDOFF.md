@@ -1,7 +1,9 @@
 # AgentGuard: Project Handoff & Continuity Guide
 
 > **NOTICE TO FUTURE AI ASSISTANT / DEVELOPER:**
-> If the user asks to **"continue working based on PROJECT_HANDOFF.md"** or resumes work after formatting/cloning this repository, start here! This document contains the full architecture, completed phases, environment setup instructions for a fresh OS installation, resolved gotchas, and immediate roadmap items.
+> 1. Always check the **`handoffs/`** directory first! Read [handoffs/CURRENT_STATUS.md](file:///D:/downloads/agent-guard-main/handoffs/CURRENT_STATUS.md) and [handoffs/INSTRUCTIONS.md](file:///D:/downloads/agent-guard-main/handoffs/INSTRUCTIONS.md) before writing code.
+> 2. Whenever you complete a feature or milestone, you **MUST** create a new handoff log in `handoffs/` and update `handoffs/CURRENT_STATUS.md` following the standardized protocol.
+> 3. If resuming work after formatting/cloning this repository, refer to this document for full architecture, resolved gotchas, and environment setup.
 
 ---
 
